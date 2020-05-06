@@ -72,6 +72,7 @@ This project is licensed under the MIT License - see the LICENSE.md file for det
 
 
 
-![User Avatar Picture](%AVATAR_URL%)  %USERNAME%
+![User Avatar Picture](%AVATAR_URL%)  
+### %USERNAME%
 
 This file generated on %DATE% by goodReadMeGenerator, copyright 2020 Jonathan Andrews

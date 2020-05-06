@@ -1,3 +1,4 @@
+*.out.md
 node_modules
 .gitignore
 .history*

@@ -30,6 +30,19 @@ const _LICENSE_TYPES = [
     "Mozilla Public License 2.0",
     "The Unlicense"
 ];
+const _BASIC_USERSTORY = `
+\`\`\`
+AS A 
+I WANT 
+SO THAT 
+\`\`\`
+
+\`\`\`
+GIVEN THAT 
+WHEN I 
+THEN 
+\`\`\`
+            `
 
 let _user, _project;
 let _team = [];
@@ -63,28 +76,37 @@ const UserInfo = function(login, avatarUrl, email, htmlUrl, type, siteAdmin) {
  * @param {Text} logoUrl URL for project logo image
  * @param {Text} badges space-delimited list of MD image links for shield/badges
  * @param {Text} tag Project tagline
+ * @param {Text} story Project User Story
  * @param {Text} desc Project Introduction
  * @param {Text} imageUrl URL(s) for main project screenshots
+ * @param {Text} tech Technologies incorporated in project
  * @param {Text} install Installation instructions with MD screenshot links
  * @param {Text} usage Usage instructions with MS screenshot links
+ * @param {Text} status Current project status
  * @param {Text} license License type
  * @param {Text} contrib List of contributors
  * @param {Text} tests Test instructions with MS screenshot links
+ * @param {Text} faq Frequently asked questions
  * @param {Text} questions Contact details for asking questions
  */
-const ProjectInfo = function (name, logoUrl, badges, tag, desc, imageUrl, install, usage, license, contrib, tests, questions) {
+const ProjectInfo = function (name, logoUrl, badges, tag, story, desc, imageUrl, tech, install, 
+    usage, status, license, contrib, tests, faq, questions) {
     return {
         title: name,
         logo: logoUrl,
         badges: badges,
         tagline: tag,
+        userStory: story,
         introduction: desc,
         image: imageUrl,
+        technologies: tech,
         installation: install,
         usage: usage,
+        status: status,
         license: license,
         contributing: contrib,
         tests: tests,
+        FAQ: faq,
         questions: questions
     }
 };
@@ -120,7 +142,7 @@ function getProjectData() {
         },
         {
             type: "input",
-            message: "Alternate Name?",
+            message: "Alternate Project Name?",
             name: "projectName2"            
         },
         {
@@ -139,7 +161,13 @@ function getProjectData() {
             name: "projectTag"            
         },
         {
-            type: "input",
+            type: "editor",
+            message: "User Story -",
+            name: "projectUserStory",
+            default: _BASIC_USERSTORY
+        },
+        {
+            type: "editor",
             message: "Project Introduction:",
             name: "projectIntro"
         },
@@ -147,6 +175,11 @@ function getProjectData() {
             type: "input",
             message: "Project Image URL (blank for none):",
             name: "projectImage"            
+        },
+        {
+            type: "input",
+            message: "Technologies incorporated in project (separate with commas):",
+            name: "projectTech"            
         },
         {
             type: "editor",
@@ -176,6 +209,11 @@ function getProjectData() {
         },
         {
             type: "input",
+            message: "Current status of the project:",
+            name: "projectStatus"
+        },
+        {
+            type: "input",
             message: "Contributing Git Usernames (separate entries by commas; blank if none):",
             name: "projectCollab"
         },
@@ -190,8 +228,13 @@ function getProjectData() {
             name: "projectTestScreenshots"            
         },
         {
+            type: "editor",
+            message: "Frequently Asked Questions:",
+            name: "projectFAQ"
+        },
+        {
             type: "input",
-            message: "For questions:",
+            message: "For additional questions:",
             name: "projectQs"
         }])
         .then(response => {
@@ -225,6 +268,7 @@ function getProjectData() {
             let projectBadges = projectBadgeList.join("   ");
 
             let projectTagline = response.projectTag;
+            let projectUserStory = response.projectUserStory;
             let projectIntro = response.projectIntro;
 
             let projectImageArray = [];
@@ -234,6 +278,12 @@ function getProjectData() {
                 projectImageArray = projectImageArray.map((element, index) => `![Project Image ${index}](${element})`);
                 projectImages = projectImageArray.join("\n");
             };
+
+            let projectTech = response.projectTech;
+            if (projectTech) {
+                projectTech = splitAndTrim(projectTech);
+                projectTech = projectTech.join("\\\n");
+            }
 
             let projectInstall = response.projectInstall;
 
@@ -262,11 +312,14 @@ function getProjectData() {
                 projectTestScreenshots.forEach(element => projectTests += "\n" + element);
             };
 
+            let projectStatus = response.projectStatus;
+            let projectFAQ = response.projectFAQ;
             let projectForQuestions = response.projectQs;
 
             //  Plug the answers into a data structure for projects
-            _project = new ProjectInfo(projectTitle, projectLogo, projectBadges, projectTagline, projectIntro, projectImages, 
-                projectInstall, projectUsage, response.projectLicense, projectContributors, projectTests, projectForQuestions);
+            _project = new ProjectInfo(projectTitle, projectLogo, projectBadges, projectTagline, projectUserStory, projectIntro, projectImages, 
+                projectTech, projectInstall, projectUsage, projectStatus, response.projectLicense, projectContributors, projectTests, 
+                projectFAQ, projectForQuestions);
             
             //  Now create the readme with the user answers
             generateReadme(_user, _project);
@@ -280,58 +333,69 @@ function getProjectData() {
  * @param {Object} projectData Data structure for project information
  */
 function generateReadme(userData, projectData) {
-    let hasLogo = (projectData.logo != "");
-    let hasBadges = (projectData.badges != "");
-    let hasTagline = (projectData.tagline != "");
-    let hasIntro = (projectData.introduction != "");
-    let hasProjectImage = (projectData.image != "");
-    let hasTeam = (projectData.contributing != "");
-    let hasLicense = !((projectData.license == "") || (projectData.license == _LICENSE_TYPES[_LICENSE_NONE]));
-    let hasTests = (projectData.tests != "");
+    const {
+        title, 
+        logo, 
+        badges, 
+        tagline, 
+        userStory, 
+        introduction, 
+        image, 
+        technologies, 
+        installation, 
+        usage, 
+        status, 
+        license, 
+        contributing, 
+        tests, 
+        FAQ,
+        questions
+    } = projectData;
+
+    let hasLogo = (logo != "");
+    let hasBadges = (badges != "");
+    let hasTagline = (tagline != "");
+    let hasIntro = (introduction != "");
+    let hasProjectImage = (image != "");
+    let hasTeam = (contributing != "");
+    let hasLicense = !((license == "") || (license == _LICENSE_TYPES[_LICENSE_NONE]));
+    let hasTests = (tests != "");
+    let hasFAQ = (FAQ != "");
+    let hasUserName = (userData.name != "");
+    let hasAvatar = (userData.avatar != "");
     let currentDate = new Date().toLocaleDateString();
 
     let mdText = "";
     if (hasLogo) {
-        mdText = projectData.logo + "\n";
+        mdText = logo + "\n";
     };
     
     mdText +=
-`# ${projectData.title}
+`# ${title}
 `;
 
     if (hasBadges) {
-        mdText += projectData.badges + "\n";
+        mdText += badges + "\n";
     };
 
     mdText += "\n";
 
     if (hasTagline) {
-        mdText += "> " + projectData.tagline + "\n\n";
+        mdText += "> " + tagline + "\n\n";
     };
 
     if (hasIntro) {
-        mdText += projectData.introduction + "\n\n";
+        mdText += introduction + "\n\n";
     };
 
     mdText += 
 `## User Story
-
-\`\`\`
-AS A 
-I WANT 
-SO THAT 
-\`\`\`
-
-\`\`\`
-GIVEN THAT 
-WHEN I 
-THEN 
-\`\`\`
+${userStory}
 
 `;
 
     if (hasProjectImage) {
-        mdText += "## Graphic\n" + projectData.image + "\n";
+        mdText += "## Graphic\n" + image + "\n";
     };
 
     mdText +=
@@ -343,11 +407,11 @@ THEN
 `;
 
     if (hasTests) {
-        mdText += `* [Tests](#Running)`;
+        mdText += `* [Tests](#Running)\n`;
     };
 
     if (hasTeam) {
-        mdText += `* [Team](#Team)`;
+        mdText += `* [Team](#Team)\n`;
     };
 
     mdText +=
@@ -363,56 +427,70 @@ THEN
 
     mdText +=
 `## Technologies
-
+${technologies}
 
 ## Getting Started
-${projectData.installation}
+${installation}
 
 ## Usage
-${projectData.usage}
+${usage}
 
 `;
 
     if (hasTests) {
-        mdText += `## Running the Tests
-        ${projectData.tests}
-        `;
+        mdText += 
+`## Running the Tests
+${tests}
+`;
     };
 
     if (hasTeam) {
-        mdText += `## Team
-        ${projectData.contributing}
-        `;
+        mdText += 
+`## Team
+${contributing}
+`;
     };
 
     mdText +=
 `## Project Status
+${status}
 
+`
 
-## FAQ
-- 
-- 
-- 
+if (hasFAQ) {
+    mdText += 
+`## FAQ
+${FAQ}
+`
+};
 
+    mdText +=
+`
 ## Additional Questions
-
+${questions}
 
 ## Contributing
 Contact us for guidelines on submitting contributions.
+
 `;
 
     if (hasLicense) {
         mdText += 
 `## License
-This project is licensed under the ${projectData.license}.
+This project is licensed under the ${license}.
 
 `
     };
+
+    if (hasAvatar) {
+        mdText += `![User Avatar Picture](${userData.avatar})\n`;
+    };
+    if (hasUserName) {
+        mdText += `## ${userData.name}\n`
+    }
     mdText +=
 `
-![User Avatar Picture](${userData.avatar})  ${userData.name}
-
-This file generated on ${currentDate} by goodReadMeGenerator, copyright 2020 Jonathan Andrews
+This file generated on ${currentDate} by goodReadMeGenerator, copyright 2020 Jonathan Andrews\n
 `
 
    fs.writeFileSync(_filename, mdText, "utf8");
