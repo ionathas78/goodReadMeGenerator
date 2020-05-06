@@ -86,6 +86,6 @@ Contact me for details regarding third-party contributions.
 This project is licensed under the MIT License.
 
 ![User Avatar Picture](https://avatars1.githubusercontent.com/u/61706660?v=4)  
-###ionathas78
+### ionathas78
 
 This file generated on 5/6/2020 by goodReadMeGenerator, copyright 2020 Jonathan Andrews
