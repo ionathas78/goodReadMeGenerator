@@ -486,7 +486,7 @@ This project is licensed under the ${license}.
         mdText += `![User Avatar Picture](${userData.avatar})\n`;
     };
     if (hasUserName) {
-        mdText += `## ${userData.name}\n`
+        mdText += `### ${userData.name}\n`
     }
     mdText +=
 `
